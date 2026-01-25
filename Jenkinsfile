@@ -11,21 +11,15 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                // Checkout from GitHub using PAT credential
-                git branch: 'main',
-                    url: 'https://github.com/Ayusheeuke/cloud-native-python-CI-CD-.git',
-                    credentialsId: 'github-creds'
+                git credentialsId: 'github-creds', url: 'https://github.com/Ayusheeuke/cloud-native-python-CI-CD-.git'
             }
         }
 
         stage('Dependency Scan - pip-audit') {
             steps {
                 sh '''
-                # Install pip-audit if not present
-                if ! command -v pip-audit >/dev/null 2>&1; then
-                    pip3 install --user pip-audit
-                fi
-                pip-audit -r requirements.txt
+                pip3 install --user pip-audit
+                ~/.local/bin/pip-audit -r requirements.txt
                 '''
             }
         }
@@ -38,18 +32,21 @@ pipeline {
 
         stage('Container Scan - Trivy') {
             steps {
-                sh '''
-                # Download Trivy standalone binary if not present
-                if ! command -v trivy >/dev/null 2>&1; then
-                    echo "Installing Trivy..."
-                    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
-                    chmod +x /usr/local/bin/trivy
-                fi
-                trivy image --severity HIGH,CRITICAL ${IMAGE_NAME}:latest
-                '''
+                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL ${IMAGE_NAME}:latest"
             }
         }
 
         stage('Login to ECR') {
             steps {
-                sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --pa_
+                sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO}"
+            }
+        }
+
+        stage('Push Image to ECR') {
+            steps {
+                sh "docker tag ${IMAGE_NAME}:latest ${ECR_REPO}:latest"
+                sh "docker push ${ECR_REPO}:latest"
+            }
+        }
+    }
+}
