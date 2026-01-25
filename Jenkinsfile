@@ -11,7 +11,10 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/Ayusheeuke/cloud-native-python-CI-CD.git'
+                // Checkout from GitHub using PAT credential
+                git branch: 'main',
+                    url: 'https://github.com/Ayusheeuke/cloud-native-python-CI-CD-.git',
+                    credentialsId: 'github-creds'
             }
         }
 
@@ -32,6 +35,8 @@ pipeline {
         stage('Dependency Scan - pip-audit') {
             steps {
                 sh '''
+                sudo apt update
+                sudo apt install -y python3-pip
                 pip3 install pip-audit
                 pip-audit -r requirements.txt
                 '''
@@ -46,27 +51,20 @@ pipeline {
 
         stage('Container Scan - Trivy') {
             steps {
-                sh '''
-                docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL $IMAGE_NAME:latest
-                '''
+                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL ${IMAGE_NAME}:latest"
             }
         }
 
         stage('Login to ECR') {
             steps {
-                sh '''
-                aws ecr get-login-password --region $AWS_REGION \
-                | docker login --username AWS --password-stdin $ECR_REPO
-                '''
+                sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO}"
             }
         }
 
         stage('Push Image to ECR') {
             steps {
-                sh '''
-                docker tag $IMAGE_NAME:latest $ECR_REPO:latest
-                docker push $ECR_REPO:latest
-                '''
+                sh "docker tag ${IMAGE_NAME}:latest ${ECR_REPO}:latest"
+                sh "docker push ${ECR_REPO}:latest"
             }
         }
     }
