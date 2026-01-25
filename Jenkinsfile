@@ -18,24 +18,15 @@ pipeline {
             }
         }
 
-        // Optional: SonarQube stage skipped for now
-        // stage('SAST - SonarQube') {
-        //     steps {
-        //         withSonarQubeEnv('sonarqube') {
-        //             sh '''
-        //             sonar-scanner \
-        //             -Dsonar.projectKey=cloud-native-python \
-        //             -Dsonar.sources=. \
-        //             -Dsonar.language=py
-        //             '''
-        //         }
-        //     }
-        // }
-
         stage('Dependency Scan - pip-audit') {
             steps {
-                // No sudo needed, pip-audit already installed on agent
-                sh 'pip-audit -r requirements.txt'
+                sh '''
+                # Install pip-audit if not present
+                if ! command -v pip-audit >/dev/null 2>&1; then
+                    pip3 install --user pip-audit
+                fi
+                pip-audit -r requirements.txt
+                '''
             }
         }
 
@@ -47,21 +38,18 @@ pipeline {
 
         stage('Container Scan - Trivy') {
             steps {
-                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL ${IMAGE_NAME}:latest"
+                sh '''
+                # Download Trivy standalone binary if not present
+                if ! command -v trivy >/dev/null 2>&1; then
+                    echo "Installing Trivy..."
+                    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+                    chmod +x /usr/local/bin/trivy
+                fi
+                trivy image --severity HIGH,CRITICAL ${IMAGE_NAME}:latest
+                '''
             }
         }
 
         stage('Login to ECR') {
             steps {
-                sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO}"
-            }
-        }
-
-        stage('Push Image to ECR') {
-            steps {
-                sh "docker tag ${IMAGE_NAME}:latest ${ECR_REPO}:latest"
-                sh "docker push ${ECR_REPO}:latest"
-            }
-        }
-    }
-}
+                sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --pa_
