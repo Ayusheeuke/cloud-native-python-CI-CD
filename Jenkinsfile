@@ -12,8 +12,11 @@ pipeline {
         stage('Dependency Scan - pip-audit') {
             steps {
                 sh '''
-                python3 -m pip install --user pip-audit
-                ~/.local/bin/pip-audit -r requirements.txt || true
+                docker run --rm \
+                  -v $(pwd):/src \
+                  -w /src \
+                  python:3.12-slim \
+                  sh -c "pip install pip-audit && pip-audit -r requirements.txt || true"
                 '''
             }
         }
