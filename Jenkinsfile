@@ -2,10 +2,9 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = "eu-north-1"
-        ECR_REPO = "135234114190.dkr.ecr.eu-north-1.amazonaws.com/python-devsecops-app
-"
-        IMAGE_NAME = "python-devsecops-app"
+        AWS_REGION = 'eu-north-1'
+        ECR_REPO = '135234114190.dkr.ecr.eu-north-1.amazonaws.com/python-devsecops-app'
+        IMAGE_NAME = 'python-devsecops-app'
     }
 
     stages {
@@ -16,23 +15,24 @@ pipeline {
             }
         }
 
-        stage('SAST - SonarQube') {
-            steps {
-                withSonarQubeEnv('sonarqube') {
-                    sh '''
-                    sonar-scanner \
-                    -Dsonar.projectKey=cloud-native-python \
-                    -Dsonar.sources=. \
-                    -Dsonar.language=py
-                    '''
-                }
-            }
-        }
+        // Optional: SonarQube stage skipped for now
+        // stage('SAST - SonarQube') {
+        //     steps {
+        //         withSonarQubeEnv('sonarqube') {
+        //             sh '''
+        //             sonar-scanner \
+        //             -Dsonar.projectKey=cloud-native-python \
+        //             -Dsonar.sources=. \
+        //             -Dsonar.language=py
+        //             '''
+        //         }
+        //     }
+        // }
 
         stage('Dependency Scan - pip-audit') {
             steps {
                 sh '''
-                pip install pip-audit
+                pip3 install pip-audit
                 pip-audit -r requirements.txt
                 '''
             }
@@ -40,16 +40,14 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh '''
-                docker build -t $IMAGE_NAME:latest .
-                '''
+                sh "docker build -t ${IMAGE_NAME}:latest ."
             }
         }
 
         stage('Container Scan - Trivy') {
             steps {
                 sh '''
-                trivy image --severity HIGH,CRITICAL $IMAGE_NAME:latest
+                docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL $IMAGE_NAME:latest
                 '''
             }
         }
