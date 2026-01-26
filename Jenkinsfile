@@ -9,6 +9,12 @@ pipeline {
 
     stages {
 
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Dependency Scan - pip-audit') {
             steps {
                 sh '''
@@ -16,7 +22,7 @@ pipeline {
                   -v $(pwd):/src \
                   -w /src \
                   python:3.12-slim \
-                  sh -c "pip install pip-audit && pip-audit -r requirements.txt || true"
+                  sh -c "pip install --no-cache-dir pip-audit && pip-audit -r requirements.txt --progress-spinner off || true"
                 '''
             }
         }
@@ -34,7 +40,10 @@ pipeline {
                 sh '''
                 docker run --rm \
                   -v /var/run/docker.sock:/var/run/docker.sock \
-                  aquasec/trivy image --severity HIGH,CRITICAL $IMAGE_NAME:latest || true
+                  aquasec/trivy image \
+                  --severity HIGH,CRITICAL \
+                  --no-progress \
+                  $IMAGE_NAME:latest || true
                 '''
             }
         }
