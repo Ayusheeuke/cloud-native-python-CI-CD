@@ -7,8 +7,6 @@ pipeline {
         ECR_REPO = 'python-devsecops-app'
         IMAGE_NAME = 'python-devsecops-app'
         ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-
-        // Versioned image tag (key fix)
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
@@ -22,3 +20,31 @@ pipeline {
 
         stage('Dependency Scan - pip-audit') {
             steps {
+                sh "docker run --rm -v \$(pwd):/src -w /src python:3.12-slim sh -c 'pip install --no-cache-dir pip-audit && pip-audit -r requirements.txt --progress-spinner off || true'"
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+            }
+        }
+
+        stage('Container Scan - Trivy') {
+            steps {
+                sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL --no-progress ${IMAGE_NAME}:${IMAGE_TAG} || true"
+            }
+        }
+
+        stage('Login to AWS ECR') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+                }
+            }
+        }
+
+        stage('Pus
