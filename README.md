@@ -1,8 +1,10 @@
 **Cloud-Native DevSecOps CI/CD Pipeline on AWS**
 
 **Project Overview**
+
 This project demonstrates a complete Cloud-Native DevSecOps CI/CD Pipeline deployed on AWS using
 modern DevOps + Security tools.
+
 
 It covers the full lifecycle of application delivery including:
 - Continuous Integration (CI)
@@ -32,12 +34,15 @@ High-Level Architecture Flow
 8. Ingress exposes the application externally
 
 **Architecture Flow Diagram**
+
+```bash
 Developer → GitHub → Jenkins → Amazon ECR → Kubernetes
                                           ↓
                                Helm-installed tools
                          (ArgoCD, Prometheus, Grafana)
                                           ↓
                                    Ingress → User
+```
 
 **Infrastructure Setup**
 
@@ -93,15 +98,25 @@ Security is integrated into the CI pipeline (Shift-Left Security):
 - Secure Docker image storage in Amazon ECR
 
 **Tools & Technologies Used**
+
 Version Control: Git, GitHub
+
 CI/CD: Jenkins
+
 Containerization: Docker
+
 Security Tools: SonarQube, pip-audit, Trivy
+
 Cloud: AWS EC2, Amazon ECR
+
 Orchestration: Kubernetes (kubeadm)
+
 GitOps: ArgoCD
+
 Package Manager: Helm
+
 Monitoring: Prometheus, Grafana
+
 Networking: NGINX Ingress Controller
 
 **Project Features**
@@ -145,7 +160,7 @@ Ingress exposes the service publicly through EC2 public IP.
 - Add TLS/HTTPS using cert-manager
 - Add log monitoring using ELK Stack / Loki
 - Implement RBAC policies in Kubernetes
-- 
+  
 **Author**
 Baijza Khade
 Post Graduate Diploma in IT Infrastructure and System Security
