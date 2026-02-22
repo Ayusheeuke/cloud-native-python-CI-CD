@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
         - name: python-app
-          image: <YOUR_ECR_IMAGE_URI>:latest
+          image: 135234114190.dkr.ecr.eu-north-1.amazonaws.com/python-devsecops-app:latest
           ports:
             - containerPort: 5000
